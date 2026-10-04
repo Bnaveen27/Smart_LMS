@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Modern Workplace Safety & Compliance (SCORM 1.2 Interactive Track)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; justify-content: space-between; }
+    .header { background: #1e293b; border-bottom: 1px solid #334155; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .badge { background: #4f46e5; color: white; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    .container { max-width: 800px; margin: 30px auto; padding: 0 20px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 20px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); }
+    .slide-title { font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #ffffff; }
+    .slide-desc { font-size: 14px; line-height: 1.7; color: #94a3b8; margin-bottom: 24px; }
+    .quiz-option { background: #0f172a; border: 2px solid #334155; border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
+    .quiz-option:hover { border-color: #6366f1; background: #1e1b4b; }
+    .quiz-option.selected { border-color: #4f46e5; background: #312e81; color: white; }
+    .nav-bar { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 18px; border-top: 1px solid #334155; }
+    .btn { background: #4f46e5; color: white; border: none; padding: 10px 22px; border-radius: 12px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #4338ca; }
+    .btn-secondary { background: #334155; color: #cbd5e1; }
+    .btn-secondary:hover { background: #475569; }
+    .status-box { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 12px 16px; margin-top: 16px; font-size: 12px; display: flex; justify-content: space-between; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h1 style="font-size: 16px; font-weight: 800;">Modern Workplace Safety & Compliance (SCORM 1.2 Interactive Track)</h1>
+      <p style="font-size: 11px; color: #94a3b8;">Standard: <b>SCORM_1.2</b> • Real-time RTE Synchronized</p>
+    </div>
+    <span class="badge" id="rteStatus">RTE Initializing...</span>
+  </div>
+
+  <div class="container">
+    <div class="card" id="slideCard">
+      <!-- Dynamic slide content injected by script -->
+    </div>
+  </div>
+
+  <script>
+    // SCORM API Discovery & Wrapper
+    let scormAPI = null;
+    const is2004 = "SCORM_1.2" === "SCORM_2004";
+
+    function findAPI(win) {
+      let findAttempts = 0;
+      while ((!win.API && !win.API_1484_11) && (win.parent) && (win.parent !== win) && (findAttempts <= 10)) {
+        findAttempts++;
+        win = win.parent;
+      }
+      return is2004 ? win.API_1484_11 : win.API;
+    }
+
+    scormAPI = findAPI(window);
+
+    // Initialize SCORM Session
+    let isInitialized = false;
+    if (scormAPI) {
+      const initResult = is2004 ? scormAPI.Initialize("") : scormAPI.LMSInitialize("");
+      isInitialized = (initResult === "true" || initResult === true);
+      document.getElementById('rteStatus').textContent = isInitialized ? "Connected to LMS API" : "RTE Standalone Mode";
+      document.getElementById('rteStatus').style.background = "#059669";
+    } else {
+      document.getElementById('rteStatus').textContent = "Demo Sandbox Mode";
+    }
+
+    // Slides Data
+    const slides = [
+      {
+        title: "Module 1: Fundamental Principles & Best Practices",
+        content: "Welcome to this interactive SCORM module. In this training, you will explore mandatory standards, risk management protocols, and essential operational procedures.",
+        type: "info"
+      },
+      {
+        title: "Knowledge Check 1: Primary Authentication Protocol",
+        content: "What is the recommended industry standard for securing multi-tenant cloud LMS access?",
+        type: "quiz",
+        options: [
+          "Single-factor simple passwords",
+          "Multi-Factor Authentication (MFA) & Verified Work Emails",
+          "Shared generic team credentials",
+          "Public API tokens without expiry"
+        ],
+        correctIndex: 1
+      },
+      {
+        title: "Module 2: Compliance & Progress Check",
+        content: "Your score and completion status will be saved back into the LMS gradebook and learner profile in real time.",
+        type: "info"
+      },
+      {
+        title: "Assessment Final: Security Protocols",
+        content: "How often should enterprise compliance audits be conducted?",
+        type: "quiz",
+        options: [
+          "Once every ten years",
+          "Quarterly or upon major system configuration updates",
+          "Never, if backups exist",
+          "Only when a data breach happens"
+        ],
+        correctIndex: 1
+      },
+      {
+        title: "🎉 Training Completed!",
+        content: "Congratulations! You have completed all learning objectives for this module. Your score has been transmitted to your Smart LMS profile.",
+        type: "complete"
+      }
+    ];
+
+    let currentSlide = 0;
+    let userAnswers = {};
+    let earnedScore = 0;
+
+    // Restore Location & SuspendData (Resume Learning Feature)
+    if (scormAPI && isInitialized) {
+      try {
+        const savedLoc = is2004 ? scormAPI.GetValue("cmi.location") : scormAPI.LMSGetValue("cmi.core.lesson_location");
+        if (savedLoc && !isNaN(parseInt(savedLoc))) {
+          currentSlide = Math.min(parseInt(savedLoc), slides.length - 1);
+        }
+      } catch (e) {}
+    }
+
+    function renderSlide() {
+      const slide = slides[currentSlide];
+      const card = document.getElementById('slideCard');
+      
+      let html = '<div class="slide-title">' + slide.title + '</div>';
+      html += '<p class="slide-desc">' + slide.content + '</p>';
+
+      if (slide.type === 'quiz') {
+        html += '<div class="quiz-options">';
+        slide.options.forEach((opt, idx) => {
+          const isSelected = userAnswers[currentSlide] === idx;
+          html += '<div class="quiz-option ' + (isSelected ? 'selected' : '') + '" onclick="selectAnswer(' + idx + ')">';
+          html += '<span style="font-weight: 800; color: #818cf8;">' + String.fromCharCode(65 + idx) + '.</span> ' + opt;
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      if (slide.type === 'complete') {
+        const finalPercent = Math.round((earnedScore / 2) * 100);
+        html += '<div style="text-align: center; padding: 20px 0;">';
+        html += '<div style="font-size: 48px; font-weight: 900; color: #10b981;">' + finalPercent + '%</div>';
+        html += '<p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Final Mastery Score</p>';
+        html += '</div>';
+      }
+
+      html += '<div class="nav-bar">';
+      if (currentSlide > 0 && slide.type !== 'complete') {
+        html += '<button class="btn btn-secondary" onclick="prevSlide()">← Previous</button>';
+      } else {
+        html += '<div></div>';
+      }
+
+      if (currentSlide < slides.length - 1) {
+        html += '<button class="btn" onclick="nextSlide()">Continue →</button>';
+      } else {
+        html += '<button class="btn" style="background: #059669;" onclick="finishCourse()">Submit & Finish Module ✓</button>';
+      }
+      html += '</div>';
+
+      html += '<div class="status-box">';
+      html += '<span>Slide ' + (currentSlide + 1) + ' of ' + slides.length + '</span>';
+      html += '<span>Bookmark (cmi.location): ' + currentSlide + '</span>';
+      html += '</div>';
+
+      card.innerHTML = html;
+
+      // Commit Location to SCORM RTE
+      if (scormAPI && isInitialized) {
+        try {
+          if (is2004) {
+            scormAPI.SetValue("cmi.location", currentSlide.toString());
+            scormAPI.SetValue("cmi.completion_status", currentSlide === slides.length - 1 ? "completed" : "incomplete");
+            scormAPI.Commit("");
+          } else {
+            scormAPI.LMSSetValue("cmi.core.lesson_location", currentSlide.toString());
+            scormAPI.LMSSetValue("cmi.core.lesson_status", currentSlide === slides.length - 1 ? "completed" : "incomplete");
+            scormAPI.LMSCommit("");
+          }
+        } catch (e) {}
+      }
+    }
+
+    window.selectAnswer = function(idx) {
+      userAnswers[currentSlide] = idx;
+      renderSlide();
+    };
+
+    window.nextSlide = function() {
+      const slide = slides[currentSlide];
+      if (slide.type === 'quiz') {
+        if (userAnswers[currentSlide] === undefined) {
+          alert('Please select an answer to proceed.');
+          return;
+        }
+        if (userAnswers[currentSlide] === slide.correctIndex) {
+          earnedScore += 1;
+        }
+      }
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        renderSlide();
+      }
+    };
+
+    window.prevSlide = function() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        renderSlide();
+      }
+    };
+
+    window.finishCourse = function() {
+      const finalPercent = Math.round((earnedScore / 2) * 100);
+      const isPassed = finalPercent >= 70;
+
+      if (scormAPI && isInitialized) {
+        try {
+          if (is2004) {
+            scormAPI.SetValue("cmi.score.raw", finalPercent.toString());
+            scormAPI.SetValue("cmi.score.scaled", (finalPercent / 100).toString());
+            scormAPI.SetValue("cmi.completion_status", "completed");
+            scormAPI.SetValue("cmi.success_status", isPassed ? "passed" : "failed");
+            scormAPI.Commit("");
+            scormAPI.Terminate("");
+          } else {
+            scormAPI.LMSSetValue("cmi.core.score.raw", finalPercent.toString());
+            scormAPI.LMSSetValue("cmi.core.lesson_status", isPassed ? "passed" : "completed");
+            scormAPI.LMSCommit("");
+            scormAPI.LMSFinish("");
+          }
+        } catch (e) {}
+      }
+      alert('Module completed successfully with score: ' + finalPercent + '%! Status: ' + (isPassed ? 'PASSED' : 'COMPLETED'));
+    };
+
+    renderSlide();
+  </script>
+</body>
+</html>

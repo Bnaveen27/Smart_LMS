@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="scorm-sample-mu5quz6u-48r8" version="1.0"
+          xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+          xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_v1p3"
+          xmlns:adlseq="http://www.adlnet.org/xsd/adlseq_v1p3"
+          xmlns:imsss="http://www.imsglobal.org/xsd/imsss">
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>2004 4th Edition</schemaversion>
+  </metadata>
+  <organizations default="ORG-1">
+    <organization identifier="ORG-1">
+      <title>Cybersecurity & Data Privacy Protocol (SCORM 2004 4th Edition)</title>
+      <item identifier="ITEM-1" identifierref="RES-1">
+        <title>Cybersecurity & Data Privacy Protocol (SCORM 2004 4th Edition)</title>
+      </item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="RES-1" type="webcontent" adlcp:scormType="sco" href="index.html">
+      <file href="index.html"/>
+    </resource>
+  </resources>
+</manifest>
